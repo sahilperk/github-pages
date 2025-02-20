@@ -1,1 +1,25 @@
-0
+<!doctype html>
+
+<html>
+    <head>
+        <meta charset="utf-8">
+
+        <title>Blank template</title>
+
+        <!-- Load external CSS styles -->
+        <link rel="stylesheet" href="styles.css">
+
+    </head>
+
+    <body>
+
+        <h1>My awesome space</h1>
+        <br />
+        <h2 style="background-color:blue; color:white;">BlankyOne</h2>
+        <p><b>ISO consultants</B> are specialists in offering the necessary guidance and support for businesses and handling the complex and time-consuming certification process in implementing ISO standards and getting the certification.</p>
+        <!-- Load external JavaScript -->
+        <script src="scripts.js"></script>
+        
+    </body>
+
+</html>
