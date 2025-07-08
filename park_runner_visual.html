@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park Runner Visual Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .park-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Park Background Elements */
+        .trees {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(to top, #228B22 0%, #32CD32 50%, #90EE90 100%);
+            border-radius: 50% 50% 0 0;
+        }
+
+        .tree {
+            position: absolute;
+            font-size: 40px;
+            animation: sway 3s infinite ease-in-out;
+        }
+
+        .tree:nth-child(1) { left: 10%; bottom: 20px; animation-delay: 0s; }
+        .tree:nth-child(2) { left: 25%; bottom: 30px; animation-delay: 0.5s; }
+        .tree:nth-child(3) { left: 40%; bottom: 15px; animation-delay: 1s; }
+        .tree:nth-child(4) { left: 60%; bottom: 25px; animation-delay: 1.5s; }
+        .tree:nth-child(5) { left: 75%; bottom: 10px; animation-delay: 2s; }
+        .tree:nth-child(6) { left: 90%; bottom: 35px; animation-delay: 2.5s; }
+
+        @keyframes sway {
+            0%, 100% { transform: rotate(-2deg); }
+            50% { transform: rotate(2deg); }
+        }
+
+        .path {
+            position: absolute;
+            bottom: 100px;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(to bottom, #D2B48C 0%, #DEB887 100%);
+            border-radius: 40px;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .path-lines {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(
+                to right,
+                #FFFFFF 0px,
+                #FFFFFF 30px,
+                transparent 30px,
+                transparent 60px
+            );
+            animation: movePath 2s linear infinite;
+        }
+
+        @keyframes movePath {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-60px); }
+        }
+
+        /* Runner Character */
+        .runner {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 60px;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .runner.running {
+            animation: run 0.8s infinite linear;
+        }
+
+        .runner.resting {
+            animation: rest 2s infinite ease-in-out;
+        }
+
+        @keyframes run {
+            0%, 100% { transform: translateX(-50%) rotate(-5deg) translateY(0); }
+            25% { transform: translateX(-50%) rotate(0deg) translateY(-10px); }
+            50% { transform: translateX(-50%) rotate(5deg) translateY(0); }
+            75% { transform: translateX(-50%) rotate(0deg) translateY(-5px); }
+        }
+
+        @keyframes rest {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+        }
+
+        /* Weather Effects */
+        .weather-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .sun {
+            position: absolute;
+            top: 50px;
+            right: 80px;
+            font-size: 50px;
+            animation: sunshine 4s infinite ease-in-out;
+        }
+
+        @keyframes sunshine {
+            0%, 100% { transform: rotate(0deg); opacity: 1; }
+            50% { transform: rotate(180deg); opacity: 0.8; }
+        }
+
+        .cloud {
+            position: absolute;
+            font-size: 30px;
+            animation: float 20s infinite linear;
+            opacity: 0.8;
+        }
+
+        .cloud:nth-child(1) { top: 20%; animation-duration: 25s; }
+        .cloud:nth-child(2) { top: 30%; animation-duration: 30s; animation-delay: -10s; }
+        .cloud:nth-child(3) { top: 15%; animation-duration: 35s; animation-delay: -20s; }
+
+        @keyframes float {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(calc(100vw + 100px)); }
+        }
+
+        .rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                180deg,
+                transparent 0px,
+                transparent 2px,
+                rgba(173, 216, 230, 0.6) 2px,
+                rgba(173, 216, 230, 0.6) 4px
+            );
+            animation: rainfall 0.5s infinite linear;
+            display: none;
+        }
+
+        @keyframes rainfall {
+            0% { transform: translateY(-20px); }
+            100% { transform: translateY(20px); }
+        }
+
+        /* UI Controls */
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+            max-width: 300px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group h3 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 3px;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.active {
+            background: linear-gradient(45deg, #27ae60, #229954);
+        }
+
+        .status-display {
+            background: rgba(236, 240, 241, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.energy {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+        }
+
+        .progress-fill.hydration {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+        }
+
+        /* Animals and Objects */
+        .park-objects {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            right: 0;
+            height: 100px;
+        }
+
+        .park-object {
+            position: absolute;
+            font-size: 25px;
+            animation: moveObject 15s infinite linear;
+        }
+
+        .park-object:nth-child(1) { bottom: 20px; animation-duration: 18s; }
+        .park-object:nth-child(2) { bottom: 40px; animation-duration: 22s; animation-delay: -5s; }
+        .park-object:nth-child(3) { bottom: 10px; animation-duration: 16s; animation-delay: -10s; }
+
+        @keyframes moveObject {
+            0% { transform: translateX(-50px); }
+            100% { transform: translateX(calc(100vw + 50px)); }
+        }
+
+        /* Events Log */
+        .events-log {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .event {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 5px;
+            background: rgba(241, 196, 15, 0.2);
+            border-left: 3px solid #f1c40f;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .achievement {
+            background: rgba(46, 204, 113, 0.2) !important;
+            border-left-color: #2ecc71 !important;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .controls {
+                position: relative;
+                margin: 10px;
+                width: calc(100% - 20px);
+                max-width: none;
+            }
+
+            .events-log {
+                position: relative;
+                margin: 10px;
+                width: calc(100% - 20px);
+                max-height: 150px;
+            }
+
+            .runner {
+                font-size: 40px;
+            }
+
+            .tree {
+                font-size: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="park-container">
+        <!-- Background elements -->
+        <div class="trees">
+            <div class="tree">🌳</div>
+            <div class="tree">🌲</div>
+            <div class="tree">🌳</div>
+            <div class="tree">🌲</div>
+            <div class="tree">🌳</div>
+            <div class="tree">🌲</div>
+        </div>
+        
+        <div class="path">
+            <div class="path-lines"></div>
+        </div>
+
+        <!-- Weather effects -->
+        <div class="weather-container">
+            <div class="sun">☀️</div>
+            <div class="cloud">☁️</div>
+            <div class="cloud">☁️</div>
+            <div class="cloud">☁️</div>
+            <div class="rain"></div>
+        </div>
+
+        <!-- Park objects -->
+        <div class="park-objects">
+            <div class="park-object">🐿️</div>
+            <div class="park-object">🦆</div>
+            <div class="park-object">🐕</div>
+        </div>
+
+        <!-- Runner character -->
+        <div class="runner" id="runner">🏃‍♂️</div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <h3>🏃‍♂️ Runner Controls</h3>
+                <button onclick="startRunning()" id="startBtn">Start Running</button>
+                <button onclick="stopRunning()" id="stopBtn">Stop Running</button>
+                <button onclick="takeBreak()" id="breakBtn">Take Break</button>
+            </div>
+
+            <div class="control-group">
+                <h3>🌤️ Weather</h3>
+                <button onclick="changeWeather('sunny')" class="active" id="sunnyBtn">Sunny</button>
+                <button onclick="changeWeather('cloudy')" id="cloudyBtn">Cloudy</button>
+                <button onclick="changeWeather('rainy')" id="rainyBtn">Rainy</button>
+            </div>
+
+            <div class="control-group">
+                <h3>🏃‍♂️ Runner Type</h3>
+                <button onclick="changeRunner('🏃‍♂️')" class="active" id="maleBtn">Male</button>
+                <button onclick="changeRunner('🏃‍♀️')" id="femaleBtn">Female</button>
+                <button onclick="changeRunner('🏃')" id="neutralBtn">Neutral</button>
+            </div>
+
+            <div class="status-display">
+                <div><strong>Energy:</strong> <span id="energyText">100/100</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill energy" id="energyBar" style="width: 100%"></div>
+                </div>
+                
+                <div><strong>Hydration:</strong> <span id="hydrationText">100%</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill hydration" id="hydrationBar" style="width: 100%"></div>
+                </div>
+                
+                <div><strong>Distance:</strong> <span id="distanceText">0.00 km</span></div>
+                <div><strong>Time:</strong> <span id="timeText">00:00</span></div>
+                <div><strong>Speed:</strong> <span id="speedText">0 km/h</span></div>
+                <div><strong>Mood:</strong> <span id="moodText">Energetic</span></div>
+            </div>
+        </div>
+
+        <!-- Events Log -->
+        <div class="events-log">
+            <h3>📋 Activity Log</h3>
+            <div id="eventsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            isRunning: false,
+            energy: 100,
+            maxEnergy: 100,
+            hydration: 100,
+            distance: 0,
+            speed: 0,
+            runningTime: 0,
+            mood: 'Energetic',
+            weather: 'sunny',
+            runnerType: '🏃‍♂️',
+            achievements: [],
+            baseSpeed: 8 // km/h
+        };
+
+        let gameInterval;
+        let weatherEffects = {
+            sunny: { speedMultiplier: 1.0, energyDrain: 1.0 },
+            cloudy: { speedMultiplier: 0.95, energyDrain: 0.9 },
+            rainy: { speedMultiplier: 0.8, energyDrain: 1.2 }
+        };
+
+        // Initialize the game
+        function init() {
+            updateDisplay();
+            addEvent("Welcome to the Park Runner! Click 'Start Running' to begin your workout.");
+        }
+
+        // Start running
+        function startRunning() {
+            if (gameState.isRunning) return;
+            if (gameState.energy < 10) {
+                addEvent("Too tired to run! Take a break first.");
+                return;
+            }
+
+            gameState.isRunning = true;
+            gameState.speed = gameState.baseSpeed * weatherEffects[gameState.weather].speedMultiplier;
+            
+            document.getElementById('runner').className = 'runner running';
+            document.getElementById('startBtn').style.opacity = '0.5';
+            document.getElementById('stopBtn').style.opacity = '1';
+            
+            addEvent(`Started running at ${gameState.speed.toFixed(1)} km/h!`);
+            
+            // Start the game loop
+            gameInterval = setInterval(gameLoop, 1000); // Update every second
+        }
+
+        // Stop running
+        function stopRunning() {
+            if (!gameState.isRunning) return;
+
+            gameState.isRunning = false;
+            gameState.speed = 0;
+            
+            document.getElementById('runner').className = 'runner resting';
+            document.getElementById('startBtn').style.opacity = '1';
+            document.getElementById('stopBtn').style.opacity = '0.5';
+            
+            clearInterval(gameInterval);
+            addEvent("Stopped running. Taking a rest.");
+        }
+
+        // Take a break
+        function takeBreak() {
+            if (gameState.isRunning) {
+                stopRunning();
+            }
+            
+            const recovery = Math.min(20, gameState.maxEnergy - gameState.energy);
+            gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + recovery);
+            gameState.hydration = Math.min(100, gameState.hydration + 15);
+            
+            addEvent(`Took a break and recovered ${recovery} energy and 15% hydration!`);
+            updateDisplay();
+        }
+
+        // Change weather
+        function changeWeather(weather) {
+            gameState.weather = weather;
+            
+            // Update UI
+            document.querySelectorAll('[id$="Btn"]').forEach(btn => {
+                if (btn.id.includes('sunny') || btn.id.includes('cloudy') || btn.id.includes('rainy')) {
+                    btn.classList.remove('active');
+                }
+            });
+            document.getElementById(weather + 'Btn').classList.add('active');
+            
+            // Update visual effects
+            const rain = document.querySelector('.rain');
+            const sun = document.querySelector('.sun');
+            const clouds = document.querySelectorAll('.cloud');
+            
+            if (weather === 'rainy') {
+                rain.style.display = 'block';
+                sun.style.opacity = '0.3';
+                clouds.forEach(cloud => cloud.style.opacity = '1');
+            } else if (weather === 'cloudy') {
+                rain.style.display = 'none';
+                sun.style.opacity = '0.5';
+                clouds.forEach(cloud => cloud.style.opacity = '0.9');
+            } else {
+                rain.style.display = 'none';
+                sun.style.opacity = '1';
+                clouds.forEach(cloud => cloud.style.opacity = '0.3');
+            }
+            
+            // Adjust speed if running
+            if (gameState.isRunning) {
+                gameState.speed = gameState.baseSpeed * weatherEffects[weather].speedMultiplier;
+            }
+            
+            addEvent(`Weather changed to ${weather}!`);
+        }
+
+        // Change runner type
+        function changeRunner(type) {
+            gameState.runnerType = type;
+            document.getElementById('runner').textContent = type;
+            
+            // Update UI
+            document.querySelectorAll('[id$="Btn"]').forEach(btn => {
+                if (btn.id.includes('male') || btn.id.includes('female') || btn.id.includes('neutral')) {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            if (type === '🏃‍♂️') document.getElementById('maleBtn').classList.add('active');
+            else if (type === '🏃‍♀️') document.getElementById('femaleBtn').classList.add('active');
+            else document.getElementById('neutralBtn').classList.add('active');
+        }
+
+        // Main game loop
+        function gameLoop() {
+            if (!gameState.isRunning) return;
+
+            // Update distance
+            const distanceIncrement = gameState.speed / 3600; // km per second
+            gameState.distance += distanceIncrement;
+            
+            // Update time
+            gameState.runningTime += 1;
+            
+            // Drain energy and hydration
+            const energyDrain = 0.5 * weatherEffects[gameState.weather].energyDrain;
+            const hydrationDrain = 0.3;
+            
+            gameState.energy = Math.max(0, gameState.energy - energyDrain);
+            gameState.hydration = Math.max(0, gameState.hydration - hydrationDrain);
+            
+            // Update mood based on energy
+            if (gameState.energy > 70) gameState.mood = 'Energetic';
+            else if (gameState.energy > 40) gameState.mood = 'Steady';
+            else if (gameState.energy > 20) gameState.mood = 'Tired';
+            else gameState.mood = 'Exhausted';
+            
+            // Check for automatic stop
+            if (gameState.energy <= 0) {
+                stopRunning();
+                addEvent("💨 Exhausted! Stopped running automatically.");
+            }
+            
+            // Random events
+            if (Math.random() < 0.1) { // 10% chance per second
+                generateRandomEvent();
+            }
+            
+            // Check achievements
+            checkAchievements();
+            
+            updateDisplay();
+        }
+
+        // Generate random events
+        function generateRandomEvent() {
+            const events = [
+                "🐿️ Saw a squirrel running alongside!",
+                "🌸 Enjoyed the beautiful flower garden.",
+                "👋 Waved at another jogger.",
+                "🦆 Ducks at the pond cheered you on!",
+                "💧 Found a water fountain for a quick drink!",
+                "🏃‍♀️ Joined a group of runners for motivation!",
+                "🌳 Appreciated the shade from the trees.",
+                "📸 Perfect moment for a running selfie!",
+                "🎵 Your favorite song came on!",
+                "💪 Feeling strong going up the hill!"
+            ];
+            
+            const event = events[Math.floor(Math.random() * events.length)];
+            addEvent(event);
+            
+            // Special effects for certain events
+            if (event.includes('water fountain')) {
+                gameState.hydration = Math.min(100, gameState.hydration + 20);
+            } else if (event.includes('motivation') || event.includes('strong')) {
+                gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + 5);
+            }
+        }
+
+        // Check for achievements
+        function checkAchievements() {
+            const achievements = [
+                { name: "First Steps", condition: () => gameState.distance >= 0.1, message: "🏆 First 100m completed!" },
+                { name: "1K Runner", condition: () => gameState.distance >= 1, message: "🏆 First kilometer achieved!" },
+                { name: "5K Runner", condition: () => gameState.distance >= 5, message: "🏆 5K distance milestone!" },
+                { name: "Speed Demon", condition: () => gameState.speed > 10, message: "🏆 Running faster than 10 km/h!" },
+                { name: "Marathon Training", condition: () => gameState.distance >= 10, message: "🏆 10K distance - marathon training level!" },
+                { name: "Endurance Master", condition: () => gameState.runningTime >= 1800, message: "🏆 30 minutes of continuous effort!" }
+            ];
+            
+            achievements.forEach(achievement => {
+                if (!gameState.achievements.includes(achievement.name) && achievement.condition()) {
+                    gameState.achievements.push(achievement.name);
+                    addEvent(achievement.message, true);
+                }
+            });
+        }
+
+        // Add event to log
+        function addEvent(message, isAchievement = false) {
+            const container = document.getElementById('eventsContainer');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = isAchievement ? 'event achievement' : 'event';
+            eventDiv.textContent = message;
+            
+            container.insertBefore(eventDiv, container.firstChild);
+            
+            // Keep only last 10 events
+            while (container.children.length > 10) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Update display
+        function updateDisplay() {
+            document.getElementById('energyText').textContent = `${Math.round(gameState.energy)}/${gameState.maxEnergy}`;
+            document.getElementById('hydrationText').textContent = `${Math.round(gameState.hydration)}%`;
+            document.getElementById('distanceText').textContent = `${gameState.distance.toFixed(2)} km`;
+            document.getElementById('speedText').textContent = `${gameState.speed.toFixed(1)} km/h`;
+            document.getElementById('moodText').textContent = gameState.mood;
+            
+            // Format time
+            const minutes = Math.floor(gameState.runningTime / 60);
+            const seconds = gameState.runningTime % 60;
+            document.getElementById('timeText').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update progress bars
+            document.getElementById('energyBar').style.width = `${(gameState.energy / gameState.maxEnergy) * 100}%`;
+            document.getElementById('hydrationBar').style.width = `${gameState.hydration}%`;
+        }
+
+        // Initialize the game when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
